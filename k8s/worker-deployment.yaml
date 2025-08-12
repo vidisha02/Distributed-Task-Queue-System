@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestra-worker
+spec:
+  replicas: 0  # KEDA will scale this
+  selector:
+    matchLabels:
+      app: orchestra-worker
+  template:
+    metadata:
+      labels:
+        app: orchestra-worker
+    spec:
+      containers:
+        - name: worker-io
+          image: vidisha02/orchestra-consumer:latest
+          command: ["python", "worker.py", "high", "medium", "low"]
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://user:password@postgres-service:5432/orchestra_db"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+        - name: worker-cpu
+          image: vidisha02/orchestra-consumer:latest
+          command: ["python", "worker.py", "cpu_bound"]
+          env:
+            - name: DATABASE_URL
+              value: "postgresql://user:password@postgres-service:5432/orchestra_db"
+            - name: REDIS_URL
+              value: "redis://redis:6379"

@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestra-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestra-producer
+  template:
+    metadata:
+      labels:
+        app: orchestra-producer
+    spec:
+      containers:
+        - name: producer
+          image: vidisha02/orchestra-producer:latest  # Replace with your pushed image name
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: DATABASE_URL
+              value: postgresql://user:password@postgres-service:5432/orchestra_db

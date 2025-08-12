@@ -1,0 +1,5 @@
+rq
+redis
+sqlalchemy
+psycopg2-binary
+pydantic>=2.0.0

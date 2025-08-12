@@ -1,0 +1,33 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: orchestra-worker-scaler
+spec:
+  scaleTargetRef:
+    kind: Deployment
+    name: orchestra-worker
+  pollingInterval: 15
+  cooldownPeriod: 60
+  minReplicaCount: 0
+  maxReplicaCount: 20
+  triggers:
+    - type: redis
+      metadata:
+        address: redis.default.svc.cluster.local:6379
+        listName: rq:queue:high
+        listLength: "5"
+    - type: redis
+      metadata:
+        address: redis.default.svc.cluster.local:6379
+        listName: rq:queue:medium
+        listLength: "10"
+    - type: redis
+      metadata:
+        address: redis.default.svc.cluster.local:6379
+        listName: rq:queue:low
+        listLength: "20"
+    - type: redis
+      metadata:
+        address: redis.default.svc.cluster.local:6379
+        listName: rq:queue:cpu_bound
+        listLength: "2"

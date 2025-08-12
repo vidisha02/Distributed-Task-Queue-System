@@ -1,0 +1,6 @@
+fastapi[all]
+sqlalchemy
+psycopg2-binary
+redis
+rq
+pydantic>=2.0.0

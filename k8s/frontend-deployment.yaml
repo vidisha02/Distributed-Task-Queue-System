@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestra-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestra-frontend
+  template:
+    metadata:
+      labels:
+        app: orchestra-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: vidisha02/orchestra-frontend:latest
+          ports:
+            - containerPort: 80

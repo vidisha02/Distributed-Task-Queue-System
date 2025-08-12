@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=orchestra_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d orchestra_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  broker:
+    image: redis:7-alpine
+
+  producer:
+    build: ./backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@database:5432/orchestra_db
+      - REDIS_URL=redis://broker:6379
+    depends_on:
+      database:
+        condition: service_healthy
+      broker:
+        condition: service_started
+
+  consumer-io:
+    build: ./consumer
+    command: python worker.py high medium low
+    volumes:
+      - ./consumer:/app
+    environment:
+      - DATABASE_URL=postgresql://user:password@database:5432/orchestra_db
+      - REDIS_URL=redis://broker:6379
+    depends_on:
+      database:
+        condition: service_healthy
+      broker:
+        condition: service_started
+
+  consumer-cpu:
+    build: ./consumer
+    command: python worker.py cpu_bound
+    volumes:
+      - ./consumer:/app
+    environment:
+      - DATABASE_URL=postgresql://user:password@database:5432/orchestra_db
+      - REDIS_URL=redis://broker:6379
+    depends_on:
+      database:
+        condition: service_healthy
+      broker:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - producer
+
+volumes:
+  postgres_data:
