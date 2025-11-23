@@ -2,8 +2,16 @@
 
 Synopsis of the DTQ System
 
-The proposed  system represents a robust, well-conceived implementation of the Distributed Task Queue (DTQ) architectural pattern. A DTQ is a foundational component in modern distributed computing, designed to manage and coordinate tasks across multiple machines or servers, thereby enhancing processing speed and efficiency.1 The core problem that Orchestra solves—offloading long-running, resource-intensive operations from the primary request-response cycle—is a critical challenge in developing scalable and responsive web applications.2 By deferring tasks such as video processing or bulk email dispatch to a background system, the user-facing application remains performant and available.
-The architecture's principal strength is its explicit and clean decoupling of components.4 This separation of concerns is a prerequisite for achieving the key benefits inherent to this pattern: enhanced scalability, improved fault tolerance, and greater system resilience.6 The five-component model—Producer, Broker, Database, Consumers, and Frontend—is a canonical and effective structure for a full-stack task processing system. It demonstrates a comprehensive understanding of how to build systems that can handle asynchronous workloads gracefully, manage state reliably, and provide necessary observability.
+The proposed  system represents a robust, well-conceived implementation of the Distributed Task Queue (DTQ) architectural pattern. A DTQ is a foundational component in modern distributed computing, designed to manage and coordinate tasks across multiple machines or servers, thereby enhancing processing speed and efficiency.
+
+1 The core problem that Orchestra solves—offloading long-running, resource-intensive operations from the primary request-response cycle—is a critical challenge in developing scalable and responsive web applications.
+
+2 By deferring tasks such as video processing or bulk email dispatch to a background system, the user-facing application remains performant and available.
+The architecture's principal strength is its explicit and clean decoupling of components.
+
+4 This separation of concerns is a prerequisite for achieving the key benefits inherent to this pattern: enhanced scalability, improved fault tolerance, and greater system resilience.
+
+6 The five-component model—Producer, Broker, Database, Consumers, and Frontend—is a canonical and effective structure for a full-stack task processing system. It demonstrates a comprehensive understanding of how to build systems that can handle asynchronous workloads gracefully, manage state reliably, and provide necessary observability.
 
 The Restaurant Kitchen Analogy Deconstructed
 
