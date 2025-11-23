@@ -44,14 +44,23 @@ In-Depth Component and Technology Stack Evaluation
 The Producer: FastAPI as the System Gateway
 
 The selection of Python with FastAPI as the technology for the Producer component is an excellent choice for a modern, high-performance API gateway. FastAPI's primary advantage is its foundation on Starlette and Pydantic, which provides native support for asynchronous operations (async/await) and high-performance data validation.11 This is ideal for an I/O-bound service like the Producer, which must efficiently handle a large number of concurrent incoming HTTP requests without blocking.
+
 Furthermore, FastAPI's automatic generation of interactive API documentation via OpenAPI (Swagger UI) and ReDoc is a significant productivity enhancement.19 It creates a self-documenting, developer-friendly interface that is crucial for any service intended to be used by other applications. For Project Orchestra, this means that any internal or external service wishing to submit a task can easily understand the required request format and expected responses.
+
 To ensure robust communication, a well-defined data contract between the client and the Producer API is essential. This contract, enforced by Pydantic models within FastAPI, prevents malformed data from entering the system at its earliest point.
+
 Table 1: API & WebSocket Data Contracts	
+
 Component	Endpoint/Event
+
 Producer API	POST /api/v1/tasks (Request Body)
+
 	POST /api/v1/tasks (Response 202 Accepted)
+	
 	GET /api/v1/tasks (Response)
+	
 	GET /api/v1/tasks/{task_id} (Response)
+	
 WebSocket	task_update (Server -> Client)
 
 The Broker: Redis as the Central Nervous System
@@ -69,7 +78,9 @@ tasks table schema provides a solid foundation. For enhanced observability and r
 An Alternative Architecture: PostgreSQL as a Task Queue
 
 A compelling alternative architecture exists that leverages advanced features within PostgreSQL to serve as both the database and the message queue, potentially eliminating the need for Redis entirely. This approach simplifies the system's operational footprint by reducing the number of stateful services that need to be deployed, monitored, and maintained.24
+
 This pattern is implemented using the SELECT... FOR UPDATE SKIP LOCKED SQL command, which was introduced in PostgreSQL 9.5.23 The workflow is as follows:
+
 1.	Multiple consumer workers concurrently execute a transaction that begins with SELECT id FROM tasks WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED;.
 2.	The FOR UPDATE clause acquires an exclusive row-level lock on the row returned by the query. This lock prevents any other transaction from selecting or modifying this specific row until the current transaction is committed or rolled back.25
 3.	The crucial SKIP LOCKED clause instructs the database engine that if it encounters a row that is already locked by another worker's transaction, it should not wait for the lock to be released. Instead, it should simply skip that row and attempt to lock the next available one.23
@@ -78,13 +89,16 @@ This mechanism provides a transactionally safe, atomic method for multiple worke
 
 The Consumers: The Python Worker Pool
 
-The Consumer, or worker, is the engine of the task queue system. Its logic—a continuous loop of polling the broker, fetching task details from the database, executing the job, and updating the final status—is the correct implementation of the consumer pattern. The ability to run multiple instances of this Python script allows for parallel processing and horizontal scaling, which is the primary mechanism for increasing the system's throughput.5
+The Consumer, or worker, is the engine of the task queue system. Its logic—a continuous loop of polling the broker, fetching task details from the database, executing the job, and updating the final status—is the correct implementation of the consumer pattern. The ability to run multiple instances of this Python script allows for parallel processing and horizontal scaling, which is the primary mechanism for increasing the system's throughput.
 
 The Critical Importance of Idempotent Task Design
 
-A crucial concept for building a reliable consumer is idempotency. An operation is idempotent if it can be performed multiple times with the same input, yet the system's state remains the same as if it had been performed only once.26
-This is not an academic concern; it is a fundamental requirement for fault tolerance in distributed systems. Consider a scenario where a worker successfully processes a task (e.g., charging a customer's credit card) but crashes due to a hardware failure before it can update the task's status in PostgreSQL to completed. From the system's perspective, the task appears to have failed. A retry mechanism would eventually re-queue this task, and another worker would pick it up. If the task logic is not idempotent, the customer would be charged a second time, leading to a critical business error.29
+A crucial concept for building a reliable consumer is idempotency. An operation is idempotent if it can be performed multiple times with the same input, yet the system's state remains the same as if it had been performed only once.
+
+This is not an academic concern; it is a fundamental requirement for fault tolerance in distributed systems. Consider a scenario where a worker successfully processes a task (e.g., charging a customer's credit card) but crashes due to a hardware failure before it can update the task's status in PostgreSQL to completed. From the system's perspective, the task appears to have failed. A retry mechanism would eventually re-queue this task, and another worker would pick it up. If the task logic is not idempotent, the customer would be charged a second time, leading to a critical business error.
+
 To implement idempotent tasks in Python, a common strategy is to use a unique identifier, often called an idempotency key, which is generated by the client and submitted with the initial task request.30 The worker's logic would then be structured as follows:
+
 1.	Before executing the core business logic, the worker checks a persistent store (e.g., a dedicated table in PostgreSQL or a key in Redis) to see if a task with this idempotency key has already been successfully completed.
 2.	If the key is found, indicating the task was already completed, the worker skips the business logic and immediately updates the current task's status to completed.
 3.	If the key is not found, the worker executes the business logic, and upon successful completion, it records the idempotency key in the persistent store before updating the task status. This entire process should be wrapped in a database transaction to ensure atomicity.
@@ -97,8 +111,11 @@ UI/UX Best Practices for Monitoring Dashboards
 
 An effective dashboard must convey the state of the system "at a glance" and guide the user toward actionable information.34 The design should follow the inverted pyramid principle of information hierarchy 35:
 ●	Level 1 (Top): Key Performance Indicators (KPIs). The most critical, high-level metrics should be displayed prominently at the top. This includes real-time counters for tasks in pending, running, completed, and failed states, as well as system health indicators like average task latency and worker throughput.
-●	Level 2 (Middle): Trends and Visualizations. This section should feature charts (e.g., from Recharts) that provide historical context and show trends over time. Examples include a line chart of queue depth over the last hour, a bar chart of task success vs. failure rates, and a pie chart showing the distribution of different task types.37
-●	Level 3 (Bottom): Granular Data Table. The bottom of the dashboard should contain a detailed, sortable, and filterable table of individual tasks. This table should display columns for id, status, task_type, created_at, finished_at, and any error messages. This allows an administrator to drill down into specific problems.39
+
+●	Level 2 (Middle): Trends and Visualizations. This section should feature charts (e.g., from Recharts) that provide historical context and show trends over time. Examples include a line chart of queue depth over the last hour, a bar chart of task success vs. failure rates, and a pie chart showing the distribution of different task types.
+
+●	Level 3 (Bottom): Granular Data Table. The bottom of the dashboard should contain a detailed, sortable, and filterable table of individual tasks. This table should display columns for id, status, task_type, created_at, finished_at, and any error messages. This allows an administrator to drill down into specific problems.
+
 The use of WebSockets is the correct architectural choice for providing the real-time data feed to this dashboard.41 A structured message format, as defined in Table 1, ensures that the frontend can efficiently process status updates and dynamically re-render components as task states change, creating a seamless and live monitoring experience.
 
 
